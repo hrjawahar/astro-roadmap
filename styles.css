@@ -516,3 +516,42 @@ textarea::placeholder {
     min-width: 640px;
   }
 }
+.history-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.history-item:last-child {
+  border-bottom: none;
+}
+
+.history-main {
+  min-width: 0;
+}
+
+.history-name {
+  font-weight: 800;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+
+.history-meta {
+  color: #5d7086;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.history-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.history-actions button {
+  padding: 8px 12px;
+  border-radius: 10px;
+}
