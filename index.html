@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>D1 D9 Life Pattern Analyzer</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div>
+        <div class="eyebrow">Rule-based browser app for manual D1/D9 interpretation</div>
+        <h1>D1–D9 Life Pattern Analyzer</h1>
+      </div>
+
+      <div class="top-actions">
+        <button id="downloadReportBtn" class="secondary" disabled>Download Report</button>
+        <button id="resetBtn" class="danger">Reset</button>
+      </div>
+    </header>
+
+    <nav class="tabs">
+      <button class="tab active" data-tab="inputTab">Input</button>
+      <button class="tab" data-tab="insightsTab">Insights</button>
+      <button class="tab" data-tab="referenceTab">Reference Guide</button>
+    </nav>
+
+    <main>
+      <section id="inputTab" class="tab-panel active">
+        <div class="card intro-card">
+          <h2>How this version works</h2>
+          <p>Enter D1 and D9 manually. The app validates the charts, sends them to the analyze function, then returns rule-based domain insights for identity, wealth, marriage, career, restraint, and health.</p>
+          <ul>
+            <li>Lagna sign is mandatory for both charts.</li>
+            <li>Enter planets house-wise, comma separated: <strong>Sun, Moon, Mars, Mercury, Jupiter, Venus, Saturn, Rahu, Ketu</strong>.</li>
+            <li>Each planet should appear once in D1 and once in D9.</li>
+          </ul>
+        </div>
+
+        <div class="grid two-col">
+          <section class="card chart-card">
+            <div class="section-head">
+              <h2>D1 Manual Entry (Rasi Chart – External Life Events)</h2>
+              <label>
+                <span>Lagna Sign</span>
+                <select id="d1Lagna"></select>
+              </label>
+            </div>
+            <div id="d1Grid" class="house-grid"></div>
+          </section>
+
+          <section class="card chart-card">
+            <div class="section-head">
+              <h2>D9 Manual Entry (Navamsa – Maturity & Sustainability)</h2>
+              <label>
+                <span>Lagna Sign</span>
+                <select id="d9Lagna"></select>
+              </label>
+            </div>
+            <div id="d9Grid" class="house-grid"></div>
+          </section>
+        </div>
+
+        <div class="card">
+          <div class="section-head compact">
+            <h2>Validation</h2>
+            <button id="analyzeBtn">Generate Insights</button>
+          </div>
+
+          <div class="form-row">
+            <label>
+              <span>Native Name</span>
+              <input id="nativeName" type="text" placeholder="Optional — appears in report" />
+            </label>
+          </div>
+
+          <div id="validationBox" class="validation-box muted">No validation run yet.</div>
+        </div>
+      </section>
+
+      <section id="insightsTab" class="tab-panel">
+        <section class="card">
+          <div class="section-head compact">
+            <h2>Quick Verdict</h2>
+            <span class="pill">Current session only</span>
+          </div>
+          <div id="quickVerdictGrid" class="verdict-grid">
+            <div class="empty-state">Run analysis to view quick verdict.</div>
+          </div>
+        </section>
+
+        <div class="grid two-col insights-layout">
+          <section class="card">
+            <h2>Summary</h2>
+            <div id="summaryBox" class="empty-state">Run analysis to view summary.</div>
+          </section>
+
+          <section class="card">
+            <h2>D1–D9 Comparison</h2>
+            <div id="comparisonTableWrap" class="empty-state">Comparison table will appear here.</div>
+          </section>
+        </div>
+
+        <section class="card">
+          <h2>Domain Insights</h2>
+          <div id="domainCards" class="domain-cards"></div>
+        </section>
+      </section>
+
+      <section id="referenceTab" class="tab-panel">
+        <div class="card">
+          <h2>Reference Guide</h2>
+          <div class="accordion-wrap" id="referenceGuide"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <template id="accordionTemplate">
+    <details class="accordion-item">
+      <summary></summary>
+      <div class="accordion-content"></div>
+    </details>
+  </template>
+
+  <script src="app.js"></script>
+</body>
+</html>
