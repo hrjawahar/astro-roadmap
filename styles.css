@@ -185,7 +185,27 @@ textarea {
   min-height: 90px;
   resize: vertical;
 }
+textarea {
+  color: #0b2f57;
+  font-weight: 700;
+  background: #ffffff;
+  border: 1px solid #9fb8d4;
+}
 
+textarea::placeholder {
+  color: #8a97a8;
+  font-style: italic;
+  font-weight: 400;
+}
+
+input {
+  color: #0b2f57;
+}
+
+select {
+  color: #0b2f57;
+  font-weight: 600;
+}
 .house-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
