@@ -1,6 +1,7 @@
 const SIGNS = ["Aries","Taurus","Gemini","Cancer","Leo","Virgo","Libra","Scorpio","Sagittarius","Capricorn","Aquarius","Pisces"];
 const PLANETS = ["Sun","Moon","Mars","Mercury","Jupiter","Venus","Saturn","Rahu","Ketu"];
 const STORAGE_KEY = "d1d9-life-pattern-inputs-v1";
+const HISTORY_KEY = "d1d9-life-pattern-history-v1";
 
 const REFERENCE_SECTIONS = [
   {
@@ -250,7 +251,108 @@ function restoreInputsFromLocal() {
     console.error("Failed to restore saved inputs", error);
   }
 }
+function getSavedHistory() {
+  const raw = localStorage.getItem(HISTORY_KEY);
+  if (!raw) return [];
 
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveCurrentEntryToHistory() {
+  const nativeName = document.getElementById("nativeName")?.value?.trim() || "Unnamed Native";
+  const d1Lagna = document.getElementById("d1Lagna")?.value || "";
+  const d9Lagna = document.getElementById("d9Lagna")?.value || "";
+
+  const entry = {
+    id: Date.now().toString(),
+    name: nativeName,
+    savedAt: new Date().toISOString(),
+    d1Lagna,
+    d9Lagna,
+    d1: {},
+    d9: {}
+  };
+
+  for (let house = 1; house <= 12; house += 1) {
+    entry.d1[house] = document.getElementById(`d1-house-${house}`)?.value || "";
+    entry.d9[house] = document.getElementById(`d9-house-${house}`)?.value || "";
+  }
+
+  const history = getSavedHistory();
+  history.unshift(entry);
+
+  const trimmed = history.slice(0, 25); // keep latest 25 saves
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(trimmed));
+  renderHistory();
+}
+
+function loadHistoryEntry(id) {
+  const history = getSavedHistory();
+  const item = history.find(entry => entry.id === id);
+  if (!item) return;
+
+  const nativeName = document.getElementById("nativeName");
+  const d1Lagna = document.getElementById("d1Lagna");
+  const d9Lagna = document.getElementById("d9Lagna");
+
+  if (nativeName) nativeName.value = item.name || "";
+  if (d1Lagna) d1Lagna.value = item.d1Lagna || "Aries";
+  if (d9Lagna) d9Lagna.value = item.d9Lagna || "Aries";
+
+  for (let house = 1; house <= 12; house += 1) {
+    const d1 = document.getElementById(`d1-house-${house}`);
+    const d9 = document.getElementById(`d9-house-${house}`);
+    if (d1) d1.value = item.d1?.[house] || "";
+    if (d9) d9.value = item.d9?.[house] || "";
+  }
+
+  saveInputsToLocal();
+}
+
+function deleteHistoryEntry(id) {
+  const history = getSavedHistory().filter(entry => entry.id !== id);
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  renderHistory();
+}
+
+function renderHistory() {
+  const historyBox = document.getElementById("historyBox");
+  if (!historyBox) return;
+
+  const history = getSavedHistory();
+
+  if (!history.length) {
+    historyBox.innerHTML = "No saved entries yet.";
+    return;
+  }
+
+  historyBox.innerHTML = history.map(item => `
+    <div class="history-item">
+      <div class="history-main">
+        <div class="history-name">${item.name}</div>
+        <div class="history-meta">Saved: ${new Date(item.savedAt).toLocaleString()}</div>
+        <div class="history-meta">D1: ${item.d1Lagna} | D9: ${item.d9Lagna}</div>
+      </div>
+      <div class="history-actions">
+        <button class="secondary history-load-btn" data-load-id="${item.id}">Load</button>
+        <button class="danger history-delete-btn" data-delete-id="${item.id}">Delete</button>
+      </div>
+    </div>
+  `).join("");
+
+  historyBox.querySelectorAll("[data-load-id]").forEach(btn => {
+    btn.addEventListener("click", () => loadHistoryEntry(btn.dataset.loadId));
+  });
+
+  historyBox.querySelectorAll("[data-delete-id]").forEach(btn => {
+    btn.addEventListener("click", () => deleteHistoryEntry(btn.dataset.deleteId));
+  });
+}
 function bindAutoSave() {
   document.querySelectorAll("input, textarea, select").forEach((el) => {
     el.addEventListener("input", saveInputsToLocal);
@@ -541,12 +643,16 @@ createGrid("d9Grid", "d9");
 initReferenceGuide();
 restoreInputsFromLocal();
 bindAutoSave();
+renderHistory();
 
-const saveBtn = document.getElementById('saveBtn');
+const saveBtn = document.getElementById("saveBtn");
 if (saveBtn) {
-  saveBtn.addEventListener('click', () => {
+  saveBtn.addEventListener("click", () => {
     saveInputsToLocal();
+    saveCurrentEntryToHistory();
     saveBtn.textContent = "Saved ✓";
-    setTimeout(() => saveBtn.textContent = "Save", 1500);
+    setTimeout(() => {
+      saveBtn.textContent = "Save";
+    }, 1500);
   });
 }
