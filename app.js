@@ -410,7 +410,76 @@ downloadBtn.addEventListener('click', () => {
 
   URL.revokeObjectURL(url);
 });
+function buildWordReport(data) {
+  const nativeName = document.getElementById("nativeName")?.value || "Unnamed Native";
 
+  return `
+  <html xmlns:o="urn:schemas-microsoft-com:office:office"
+        xmlns:w="urn:schemas-microsoft-com:office:word"
+        xmlns="http://www.w3.org/TR/REC-html40">
+  <head>
+    <meta charset="utf-8">
+    <title>D1-D9 Report</title>
+    <style>
+      body { font-family: Arial, sans-serif; line-height: 1.5; color: #222; }
+      h1, h2, h3 { color: #113d6d; }
+      table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+      th, td { border: 1px solid #999; padding: 8px; text-align: left; vertical-align: top; }
+      .section { margin-bottom: 20px; }
+    </style>
+  </head>
+  <body>
+    <h1>D1–D9 Life Pattern Analyzer Report</h1>
+    <p><strong>Native:</strong> ${nativeName}</p>
+    <p><strong>Generated:</strong> ${new Date(data.generatedAt).toLocaleString()}</p>
+
+    <div class="section">
+      <h2>Summary</h2>
+      <p><strong>Overall pattern:</strong> ${data.summary?.overallPattern || '-'}</p>
+      <p><strong>Early-life leaning:</strong> ${data.summary?.earlyLife || '-'}</p>
+      <p><strong>Later-life leaning:</strong> ${data.summary?.laterLife || '-'}</p>
+    </div>
+
+    <div class="section">
+      <h2>D1–D9 Comparison</h2>
+      <table>
+        <tr>
+          <th>Domain</th>
+          <th>D1</th>
+          <th>D9</th>
+          <th>Trend</th>
+          <th>Final Verdict</th>
+        </tr>
+        ${(data.domains || []).map(domain => `
+          <tr>
+            <td>${domain.title}</td>
+            <td>${domain.d1Strength}</td>
+            <td>${domain.d9Strength}</td>
+            <td>${deriveTrend(domain)}</td>
+            <td>${domain.verdict}</td>
+          </tr>
+        `).join('')}
+      </table>
+    </div>
+
+    <div class="section">
+      <h2>Domain Insights</h2>
+      ${(data.domains || []).map(domain => `
+        <h3>${domain.title}</h3>
+        <p><strong>Verdict:</strong> ${domain.verdict}</p>
+        <p><strong>D1 Strength:</strong> ${domain.d1Strength}</p>
+        <p><strong>D9 Strength:</strong> ${domain.d9Strength}</p>
+        <p><strong>Astrology standpoint:</strong> ${domain.factorOverview || '-'}</p>
+        <p><strong>Flag logic:</strong> ${domain.flagLogic || '-'}</p>
+        <p><strong>Flags:</strong> ${(domain.flags && domain.flags.length) ? domain.flags.join(', ') : 'None'}</p>
+        <ul>
+          ${(domain.reasons || []).map(r => `<li>${r}</li>`).join('')}
+        </ul>
+      `).join('')}
+    </div>
+  </body>
+  </html>`;
+}
 function buildDownloadText(data) {
   const nativeName = document.getElementById("nativeName")?.value || "Unnamed Native";
   const lines = [];
