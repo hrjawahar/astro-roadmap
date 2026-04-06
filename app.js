@@ -1,7 +1,6 @@
-
 const SIGNS = ["Aries","Taurus","Gemini","Cancer","Leo","Virgo","Libra","Scorpio","Sagittarius","Capricorn","Aquarius","Pisces"];
 const PLANETS = ["Sun","Moon","Mars","Mercury","Jupiter","Venus","Saturn","Rahu","Ketu"];
-const STORAGE_KEY = 'd1d9-life-pattern-inputs-v1';
+const STORAGE_KEY = "d1d9-life-pattern-inputs-v1";
 
 const REFERENCE_SECTIONS = [
   {
@@ -65,39 +64,39 @@ const REFERENCE_SECTIONS = [
   }
 ];
 
-const signLord = {
-  Aries: "Mars", Taurus: "Venus", Gemini: "Mercury", Cancer: "Moon",
-  Leo: "Sun", Virgo: "Mercury", Libra: "Venus", Scorpio: "Mars",
-  Sagittarius: "Jupiter", Capricorn: "Saturn", Aquarius: "Saturn", Pisces: "Jupiter"
-};
-
-const tabs = document.querySelectorAll('.tab');
-const panels = document.querySelectorAll('.tab-panel');
-const validationBox = document.getElementById('validationBox');
-const summaryBox = document.getElementById('summaryBox');
-const domainCards = document.getElementById('domainCards');
-const quickVerdictGrid = document.getElementById('quickVerdictGrid');
-const comparisonTableWrap = document.getElementById('comparisonTableWrap');
-const analyzeBtn = document.getElementById('analyzeBtn');
-const downloadBtn = document.getElementById('downloadReportBtn');
-const resetBtn = document.getElementById('resetBtn');
+const tabs = document.querySelectorAll(".tab");
+const panels = document.querySelectorAll(".tab-panel");
+const validationBox = document.getElementById("validationBox");
+const summaryBox = document.getElementById("summaryBox");
+const domainCards = document.getElementById("domainCards");
+const quickVerdictGrid = document.getElementById("quickVerdictGrid");
+const comparisonTableWrap = document.getElementById("comparisonTableWrap");
+const analyzeBtn = document.getElementById("analyzeBtn");
+const downloadBtn = document.getElementById("downloadReportBtn");
+const resetBtn = document.getElementById("resetBtn");
 
 function initSelect(id) {
   const select = document.getElementById(id);
-  SIGNS.forEach(sign => {
-    const opt = document.createElement('option');
+  if (!select) return;
+
+  select.innerHTML = "";
+  SIGNS.forEach((sign) => {
+    const opt = document.createElement("option");
     opt.value = sign;
     opt.textContent = sign;
     select.appendChild(opt);
   });
-  select.value = 'Aries';
+  select.value = "Aries";
 }
 
 function createGrid(containerId, prefix) {
   const container = document.getElementById(containerId);
+  if (!container) return;
+
+  container.innerHTML = "";
   for (let house = 1; house <= 12; house += 1) {
-    const box = document.createElement('div');
-    box.className = 'house-box';
+    const box = document.createElement("div");
+    box.className = "house-box";
     box.innerHTML = `
       <div><strong>House ${house}</strong></div>
       <label for="${prefix}-house-${house}">Planets (comma separated)</label>
@@ -106,20 +105,121 @@ function createGrid(containerId, prefix) {
     container.appendChild(box);
   }
 }
-const STORAGE_KEY = 'd1d9-life-pattern-inputs-v1';
+
+function initReferenceGuide() {
+  const wrap = document.getElementById("referenceGuide");
+  const template = document.getElementById("accordionTemplate");
+  if (!wrap || !template) return;
+
+  wrap.innerHTML = "";
+  REFERENCE_SECTIONS.forEach((section) => {
+    const node = template.content.cloneNode(true);
+    const summary = node.querySelector("summary");
+    const content = node.querySelector(".accordion-content");
+    if (summary) summary.textContent = section.title;
+    if (content) {
+      content.innerHTML = `<ul>${section.lines.map((line) => `<li>${line}</li>`).join("")}</ul>`;
+    }
+    wrap.appendChild(node);
+  });
+}
+
+function capitalize(text) {
+  if (!text) return "";
+  const clean = text.toLowerCase();
+  return clean.charAt(0).toUpperCase() + clean.slice(1);
+}
+
+function getHouseInput(prefix) {
+  const houses = {};
+  for (let house = 1; house <= 12; house += 1) {
+    const el = document.getElementById(`${prefix}-house-${house}`);
+    const raw = el ? el.value.trim() : "";
+    const planets = raw
+      ? raw.split(",").map((item) => capitalize(item.trim())).filter(Boolean)
+      : [];
+    houses[house] = planets;
+  }
+  return houses;
+}
+
+function validateChart(chartName, lagna, houses) {
+  const errors = [];
+  const planetCounts = Object.fromEntries(PLANETS.map((p) => [p, 0]));
+
+  Object.entries(houses).forEach(([house, planets]) => {
+    planets.forEach((planet) => {
+      if (!PLANETS.includes(planet)) {
+        errors.push(`${chartName}: ${planet} in house ${house} is not a supported planet name.`);
+      } else {
+        planetCounts[planet] += 1;
+      }
+    });
+  });
+
+  PLANETS.forEach((planet) => {
+    if (planetCounts[planet] === 0) {
+      errors.push(`${chartName}: ${planet} is missing.`);
+    }
+    if (planetCounts[planet] > 1) {
+      errors.push(`${chartName}: ${planet} appears ${planetCounts[planet]} times.`);
+    }
+  });
+
+  if (!lagna) {
+    errors.push(`${chartName}: Lagna sign missing.`);
+  }
+
+  return { errors, planetCounts };
+}
+
+function renderValidation(errors) {
+  if (!validationBox) return;
+
+  if (!errors.length) {
+    validationBox.innerHTML = `<span class="good">Validation passed.</span> D1 and D9 look structurally complete.`;
+    return;
+  }
+
+  validationBox.innerHTML = `
+    <div class="bad"><strong>Validation failed:</strong></div>
+    <ul>${errors.map((err) => `<li>${err}</li>`).join("")}</ul>
+  `;
+}
+
+function buildPayload() {
+  const d1Lagna = document.getElementById("d1Lagna")?.value || "";
+  const d9Lagna = document.getElementById("d9Lagna")?.value || "";
+  const d1Houses = getHouseInput("d1");
+  const d9Houses = getHouseInput("d9");
+
+  return {
+    d1: { lagnaSign: d1Lagna, houses: d1Houses },
+    d9: { lagnaSign: d9Lagna, houses: d9Houses },
+    meta: { source: "manual-entry-browser-app", version: "clean-rewrite-v1" }
+  };
+}
+
+function normalizeVerdict(text) {
+  if (!text) return "";
+  return text
+    .replace(/EMA Risk/gi, "Restraint")
+    .replace(/\bMixed progression\b/gi, "Shifting pattern")
+    .replace(/\bMixed\b/gi, "Developing");
+}
 
 function saveInputsToLocal() {
   const payload = {
-    nativeName: document.getElementById('nativeName')?.value || '',
-    d1Lagna: document.getElementById('d1Lagna')?.value || '',
-    d9Lagna: document.getElementById('d9Lagna')?.value || '',
+    nativeName: document.getElementById("nativeName")?.value || "",
+    d1Lagna: document.getElementById("d1Lagna")?.value || "",
+    d9Lagna: document.getElementById("d9Lagna")?.value || "",
     d1: {},
     d9: {}
   };
 
-  for (let house = 1; house <= 12; house++) {
-    payload.d1[house] = document.getElementById(`d1-house-${house}`)?.value || '';
-    payload.d9[house] = document.getElementById(`d9-house-${house}`)?.value || '';
+  for (let house = 1; house <= 12; house += 1) {
+    payload.d1[house] = document.getElementById(`d1-house-${house}`)?.value || "";
+    payload.d9[house] = document.getElementById(`d9-house-${house}`)?.value || "";
   }
 
   localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
@@ -129,177 +229,141 @@ function restoreInputsFromLocal() {
   const raw = localStorage.getItem(STORAGE_KEY);
   if (!raw) return;
 
-  const saved = JSON.parse(raw);
+  try {
+    const saved = JSON.parse(raw);
 
-  document.getElementById('nativeName').value = saved.nativeName || '';
-  document.getElementById('d1Lagna').value = saved.d1Lagna || 'Aries';
-  document.getElementById('d9Lagna').value = saved.d9Lagna || 'Aries';
+    const nativeName = document.getElementById("nativeName");
+    const d1Lagna = document.getElementById("d1Lagna");
+    const d9Lagna = document.getElementById("d9Lagna");
 
-  for (let house = 1; house <= 12; house++) {
-    const d1 = document.getElementById(`d1-house-${house}`);
-    const d9 = document.getElementById(`d9-house-${house}`);
-    if (d1) d1.value = saved.d1?.[house] || '';
-    if (d9) d9.value = saved.d9?.[house] || '';
+    if (nativeName) nativeName.value = saved.nativeName || "";
+    if (d1Lagna) d1Lagna.value = saved.d1Lagna || "Aries";
+    if (d9Lagna) d9Lagna.value = saved.d9Lagna || "Aries";
+
+    for (let house = 1; house <= 12; house += 1) {
+      const d1 = document.getElementById(`d1-house-${house}`);
+      const d9 = document.getElementById(`d9-house-${house}`);
+      if (d1) d1.value = saved.d1?.[house] || "";
+      if (d9) d9.value = saved.d9?.[house] || "";
+    }
+  } catch (error) {
+    console.error("Failed to restore saved inputs", error);
   }
 }
 
 function bindAutoSave() {
-  document.querySelectorAll('input, textarea, select').forEach(el => {
-    el.addEventListener('input', saveInputsToLocal);
-    el.addEventListener('change', saveInputsToLocal);
+  document.querySelectorAll("input, textarea, select").forEach((el) => {
+    el.addEventListener("input", saveInputsToLocal);
+    el.addEventListener("change", saveInputsToLocal);
   });
-}
-function initReferenceGuide() {
-  const wrap = document.getElementById('referenceGuide');
-  const template = document.getElementById('accordionTemplate');
-  wrap.innerHTML = '';
-
-  REFERENCE_SECTIONS.forEach(section => {
-    const node = template.content.cloneNode(true);
-    node.querySelector('summary').textContent = section.title;
-    node.querySelector('.accordion-content').innerHTML = `<ul>${section.lines.map(line => `<li>${line}</li>`).join('')}</ul>`;
-    wrap.appendChild(node);
-  });
-}
-
-function capitalize(text) {
-  if (!text) return '';
-  const clean = text.toLowerCase();
-  return clean.charAt(0).toUpperCase() + clean.slice(1);
-}
-
-function getHouseInput(prefix) {
-  const houses = {};
-  for (let house = 1; house <= 12; house += 1) {
-    const raw = document.getElementById(`${prefix}-house-${house}`).value.trim();
-    const planets = raw ? raw.split(',').map(item => capitalize(item.trim())).filter(Boolean) : [];
-    houses[house] = planets;
-  }
-  return houses;
-}
-
-function validateChart(chartName, lagna, houses) {
-  const errors = [];
-  const planetCounts = Object.fromEntries(PLANETS.map(p => [p, 0]));
-  Object.entries(houses).forEach(([house, planets]) => {
-    planets.forEach(p => {
-      if (!PLANETS.includes(p)) {
-        errors.push(`${chartName}: ${p} in house ${house} is not a supported planet name.`);
-      } else {
-        planetCounts[p] += 1;
-      }
-    });
-  });
-  PLANETS.forEach(p => {
-    if (planetCounts[p] === 0) errors.push(`${chartName}: ${p} is missing.`);
-    if (planetCounts[p] > 1) errors.push(`${chartName}: ${p} appears ${planetCounts[p]} times.`);
-  });
-  if (!lagna) errors.push(`${chartName}: Lagna sign missing.`);
-  return { errors, planetCounts };
-}
-
-function renderValidation(errors) {
-  if (!errors.length) {
-    validationBox.innerHTML = `<span class="good">Validation passed.</span> D1 and D9 look structurally complete.`;
-    return;
-  }
-  validationBox.innerHTML = `<div class="bad"><strong>Validation failed:</strong></div><ul>${errors.map(err => `<li>${err}</li>`).join('')}</ul>`;
-}
-function renderValidation(errors) {
-}
-
-function buildPayload() {
-  const d1Lagna = document.getElementById('d1Lagna').value;
-  const d9Lagna = document.getElementById('d9Lagna').value;
-  const d1Houses = getHouseInput('d1');
-  const d9Houses = getHouseInput('d9');
-  return {
-    d1: { lagnaSign: d1Lagna, houses: d1Houses },
-    d9: { lagnaSign: d9Lagna, houses: d9Houses },
-    meta: { source: 'manual-entry-browser-app', version: 'v2-layout-preserved' }
-  };
-}
-
-function normalizeVerdict(text) {
-  if (!text) return '';
-  return text
-    .replace(/EMA Risk/gi, 'Restraint')
-    .replace(/\bMixed\b/gi, 'Developing')
-    .replace(/\bMixed progression\b/gi, 'Shifting pattern');
 }
 
 async function analyze() {
   const payload = buildPayload();
-  const d1Validation = validateChart('D1', payload.d1.lagnaSign, payload.d1.houses);
-  const d9Validation = validateChart('D9', payload.d9.lagnaSign, payload.d9.houses);
+  const d1Validation = validateChart("D1", payload.d1.lagnaSign, payload.d1.houses);
+  const d9Validation = validateChart("D9", payload.d9.lagnaSign, payload.d9.houses);
   const errors = [...d1Validation.errors, ...d9Validation.errors];
+
   renderValidation(errors);
   if (errors.length) return;
 
-  analyzeBtn.disabled = true;
-  analyzeBtn.textContent = 'Analyzing...';
+  if (analyzeBtn) {
+    analyzeBtn.disabled = true;
+    analyzeBtn.textContent = "Analyzing...";
+  }
 
   try {
-    const res = await fetch('/api/analyze', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    const res = await fetch("/api/analyze", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
 
     const text = await res.text();
     let data;
+
     try {
       data = JSON.parse(text);
     } catch {
-      throw new Error('Backend is not returning JSON. Check /functions/api/analyze.js deployment.');
+      throw new Error("Backend is not returning JSON. Check /functions/api/analyze.js deployment.");
     }
 
-    if (!res.ok) throw new Error(data.error || 'Analysis failed');
+    if (!res.ok) {
+      throw new Error(data.error || "Analysis failed");
+    }
 
     renderResult(data);
-    switchTab('insightsTab');
+    switchTab("insightsTab");
   } catch (error) {
-    validationBox.innerHTML = `<span class="bad">${error.message}</span>`;
+    if (validationBox) {
+      validationBox.innerHTML = `<span class="bad">${error.message}</span>`;
+    }
   } finally {
-    analyzeBtn.disabled = false;
-    analyzeBtn.textContent = 'Generate Insights';
+    if (analyzeBtn) {
+      analyzeBtn.disabled = false;
+      analyzeBtn.textContent = "Generate Insights";
+    }
   }
 }
 
 function renderResult(data) {
-  const domains = (data.domains || []).map(domain => ({
+  const domains = (data.domains || []).map((domain) => ({
     ...domain,
     title: normalizeVerdict(domain.title),
     verdict: normalizeVerdict(domain.verdict)
   }));
 
   const summary = data.summary || {};
-  summaryBox.innerHTML = `
-    <p><strong>Overall pattern:</strong> ${summary.overallPattern || '-'}</p>
-    <p><strong>Early-life leaning:</strong> ${summary.earlyLife || '-'}</p>
-    <p><strong>Later-life leaning:</strong> ${summary.laterLife || '-'}</p>
-    <p><strong>Generated:</strong> ${new Date(data.generatedAt).toLocaleString()}</p>
-  `;
+  if (summaryBox) {
+    summaryBox.innerHTML = `
+      <p><strong>Overall pattern:</strong> ${summary.overallPattern || "-"}</p>
+      <p><strong>Early-life leaning:</strong> ${summary.earlyLife || "-"}</p>
+      <p><strong>Later-life leaning:</strong> ${summary.laterLife || "-"}</p>
+      <p><strong>Generated:</strong> ${data.generatedAt ? new Date(data.generatedAt).toLocaleString() : "-"}</p>
+    `;
+  }
 
   renderQuickVerdict(domains);
   renderComparisonTable(domains);
   renderDomainCards(domains);
 
-  window.__lastReport = { ...data, domains };
-  downloadBtn.disabled = false;
+  window.__lastReport = {
+    ...data,
+    domains
+  };
+
+  if (downloadBtn) {
+    downloadBtn.disabled = false;
+  }
 }
 
 function renderQuickVerdict(domains) {
-  quickVerdictGrid.innerHTML = domains.map(domain => `
+  if (!quickVerdictGrid) return;
+
+  quickVerdictGrid.innerHTML = domains.map((domain) => `
     <div class="verdict-card">
       <h3>${domain.title}</h3>
       <div class="verdict-value">${domain.verdict}</div>
     </div>
-  `).join('');
+  `).join("");
+}
+
+function deriveTrend(domain) {
+  if (domain.d1Strength === "Strong" && domain.d9Strength === "Strong") return "Stable";
+  if (domain.d1Strength === "Strong" && (domain.d9Strength === "Developing" || domain.d9Strength === "Weak")) {
+    return "Early strength, later fluctuation";
+  }
+  if ((domain.d1Strength === "Developing" || domain.d1Strength === "Weak") && domain.d9Strength === "Strong") {
+    return "Improves later";
+  }
+  if (domain.d1Strength === "Weak" && domain.d9Strength === "Weak") return "Persistent challenge";
+  return "Shifting pattern";
 }
 
 function renderComparisonTable(domains) {
-  comparisonTableWrap.className = 'comparison-table-wrap';
+  if (!comparisonTableWrap) return;
+
+  comparisonTableWrap.className = "comparison-table-wrap";
   comparisonTableWrap.innerHTML = `
     <table class="comparison-table">
       <thead>
@@ -312,80 +376,56 @@ function renderComparisonTable(domains) {
         </tr>
       </thead>
       <tbody>
-        ${domains.map(domain => `
+        ${domains.map((domain) => `
           <tr>
             <td>${domain.title}</td>
-            <td>${domain.d1Strength}</td>
-            <td>${domain.d9Strength}</td>
+            <td>${domain.d1Strength || "-"}</td>
+            <td>${domain.d9Strength || "-"}</td>
             <td>${deriveTrend(domain)}</td>
-            <td>${domain.verdict}</td>
+            <td>${domain.verdict || "-"}</td>
           </tr>
-        `).join('')}
+        `).join("")}
       </tbody>
     </table>
   `;
 }
 
-function deriveTrend(domain) {
-  if (domain.d1Strength === 'Strong' && domain.d9Strength === 'Strong') return 'Stable';
-  if (domain.d1Strength === 'Strong' && (domain.d9Strength === 'Developing' || domain.d9Strength === 'Weak')) return 'Early strength, later fluctuation';
-  if ((domain.d1Strength === 'Developing' || domain.d1Strength === 'Weak') && domain.d9Strength === 'Strong') return 'Improves later';
-  if (domain.d1Strength === 'Weak' && domain.d9Strength === 'Weak') return 'Persistent challenge';
-  return 'Shifting pattern';
-}
-
 function statusClass(verdict) {
-  const key = (verdict || '').toLowerCase();
-  if (key.includes('stable') || key.includes('strong')) return 'status-stable';
-  if (key.includes('developing') || key.includes('moderate') || key.includes('temporary') || key.includes('delayed')) return 'status-developing';
-  return 'status-vulnerable';
+  const key = (verdict || "").toLowerCase();
+  if (key.includes("stable") || key.includes("strong")) return "status-stable";
+  if (
+    key.includes("developing") ||
+    key.includes("moderate") ||
+    key.includes("temporary") ||
+    key.includes("delayed") ||
+    key.includes("improves")
+  ) {
+    return "status-developing";
+  }
+  return "status-vulnerable";
 }
 
 function renderDomainCards(domains) {
-  domainCards.innerHTML = domains.map(domain => `
+  if (!domainCards) return;
+
+  domainCards.innerHTML = domains.map((domain) => `
     <article class="domain-card">
       <div class="domain-group-tag">${deriveTrend(domain)}</div>
       <div class="section-head compact">
         <h2>${domain.title}</h2>
         <span class="status-badge ${statusClass(domain.verdict)}">${domain.verdict}</span>
       </div>
-      <div class="score-row"><strong>D1:</strong> ${domain.d1Strength}</div>
-      <div class="score-row"><strong>D9:</strong> ${domain.d9Strength}</div>
-      <div class="score-row"><strong>Astrology standpoint:</strong> ${domain.factorOverview || '-'}</div>
-      <div class="score-row"><strong>Flag logic:</strong> ${domain.flagLogic || '-'}</div>
-      <div class="score-row"><strong>Flags:</strong> ${(domain.flags && domain.flags.length) ? domain.flags.join(', ') : 'None'}</div>
+      <div class="score-row"><strong>D1:</strong> ${domain.d1Strength || "-"}</div>
+      <div class="score-row"><strong>D9:</strong> ${domain.d9Strength || "-"}</div>
+      <div class="score-row"><strong>Astrology standpoint:</strong> ${domain.factorOverview || "-"}</div>
+      <div class="score-row"><strong>Flag logic:</strong> ${domain.flagLogic || "-"}</div>
+      <div class="score-row"><strong>Flags:</strong> ${(domain.flags && domain.flags.length) ? domain.flags.join(", ") : "None"}</div>
       <div class="score-row"><strong>Reading:</strong></div>
-      <ul class="status-list">${(domain.reasons || []).map(r => `<li>${r}</li>`).join('')}</ul>
+      <ul class="status-list">${(domain.reasons || []).map((r) => `<li>${r}</li>`).join("")}</ul>
     </article>
-  `).join('');
+  `).join("");
 }
 
-function switchTab(tabId) {
-  tabs.forEach(tab => tab.classList.toggle('active', tab.dataset.tab === tabId));
-  panels.forEach(panel => panel.classList.toggle('active', panel.id === tabId));
-}
-
-tabs.forEach(tab => tab.addEventListener('click', () => switchTab(tab.dataset.tab)));
-analyzeBtn.addEventListener('click', analyze);
-resetBtn.addEventListener('click', () => {
-  localStorage.removeItem(STORAGE_KEY);
-  window.location.reload();
-});
-
-downloadBtn.addEventListener('click', () => {
-  if (!window.__lastReport) return;
-
-  const html = buildWordReport(window.__lastReport);
-  const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
-  const url = URL.createObjectURL(blob);
-
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'd1-d9-analysis-report.doc';
-  a.click();
-
-  URL.revokeObjectURL(url);
-});
 function buildWordReport(data) {
   const nativeName = document.getElementById("nativeName")?.value || "Unnamed Native";
 
@@ -407,13 +447,13 @@ function buildWordReport(data) {
   <body>
     <h1>D1–D9 Life Pattern Analyzer Report</h1>
     <p><strong>Native:</strong> ${nativeName}</p>
-    <p><strong>Generated:</strong> ${new Date(data.generatedAt).toLocaleString()}</p>
+    <p><strong>Generated:</strong> ${data.generatedAt ? new Date(data.generatedAt).toLocaleString() : "-"}</p>
 
     <div class="section">
       <h2>Summary</h2>
-      <p><strong>Overall pattern:</strong> ${data.summary?.overallPattern || '-'}</p>
-      <p><strong>Early-life leaning:</strong> ${data.summary?.earlyLife || '-'}</p>
-      <p><strong>Later-life leaning:</strong> ${data.summary?.laterLife || '-'}</p>
+      <p><strong>Overall pattern:</strong> ${data.summary?.overallPattern || "-"}</p>
+      <p><strong>Early-life leaning:</strong> ${data.summary?.earlyLife || "-"}</p>
+      <p><strong>Later-life leaning:</strong> ${data.summary?.laterLife || "-"}</p>
     </div>
 
     <div class="section">
@@ -426,114 +466,78 @@ function buildWordReport(data) {
           <th>Trend</th>
           <th>Final Verdict</th>
         </tr>
-        ${(data.domains || []).map(domain => `
+        ${(data.domains || []).map((domain) => `
           <tr>
-            <td>${domain.title}</td>
-            <td>${domain.d1Strength}</td>
-            <td>${domain.d9Strength}</td>
+            <td>${domain.title || "-"}</td>
+            <td>${domain.d1Strength || "-"}</td>
+            <td>${domain.d9Strength || "-"}</td>
             <td>${deriveTrend(domain)}</td>
-            <td>${domain.verdict}</td>
+            <td>${domain.verdict || "-"}</td>
           </tr>
-        `).join('')}
+        `).join("")}
       </table>
     </div>
 
     <div class="section">
       <h2>Domain Insights</h2>
-      ${(data.domains || []).map(domain => `
-        <h3>${domain.title}</h3>
-        <p><strong>Verdict:</strong> ${domain.verdict}</p>
-        <p><strong>D1 Strength:</strong> ${domain.d1Strength}</p>
-        <p><strong>D9 Strength:</strong> ${domain.d9Strength}</p>
-        <p><strong>Astrology standpoint:</strong> ${domain.factorOverview || '-'}</p>
-        <p><strong>Flag logic:</strong> ${domain.flagLogic || '-'}</p>
-        <p><strong>Flags:</strong> ${(domain.flags && domain.flags.length) ? domain.flags.join(', ') : 'None'}</p>
+      ${(data.domains || []).map((domain) => `
+        <h3>${domain.title || "-"}</h3>
+        <p><strong>Verdict:</strong> ${domain.verdict || "-"}</p>
+        <p><strong>D1 Strength:</strong> ${domain.d1Strength || "-"}</p>
+        <p><strong>D9 Strength:</strong> ${domain.d9Strength || "-"}</p>
+        <p><strong>Astrology standpoint:</strong> ${domain.factorOverview || "-"}</p>
+        <p><strong>Flag logic:</strong> ${domain.flagLogic || "-"}</p>
+        <p><strong>Flags:</strong> ${(domain.flags && domain.flags.length) ? domain.flags.join(", ") : "None"}</p>
         <ul>
-          ${(domain.reasons || []).map(r => `<li>${r}</li>`).join('')}
+          ${(domain.reasons || []).map((r) => `<li>${r}</li>`).join("")}
         </ul>
-      `).join('')}
+      `).join("")}
     </div>
   </body>
   </html>`;
 }
-function buildDownloadText(data) {
-  const nativeName = document.getElementById("nativeName")?.value || "Unnamed Native";
-  const lines = [];
-  lines.push(`Native: ${nativeName}`);
-  lines.push('D1-D9 LIFE PATTERN ANALYZER REPORT');
-  lines.push('');
-  lines.push(`Generated At: ${new Date(data.generatedAt).toLocaleString()}`);
-  lines.push(`Overall Pattern: ${data.summary.overallPattern}`);
-  lines.push(`Early-Life Leaning: ${data.summary.earlyLife}`);
-  lines.push(`Later-Life Leaning: ${data.summary.laterLife}`);
-  lines.push('');
-  lines.push('DOMAIN INSIGHTS');
 
-  data.domains.forEach(domain => {
-    lines.push('');
-    lines.push(domain.title.toUpperCase());
-    lines.push(`Verdict: ${domain.verdict}`);
-    lines.push(`D1 Strength: ${domain.d1Strength}`);
-    lines.push(`D9 Strength: ${domain.d9Strength}`);
-    lines.push(`Astrology standpoint: ${domain.factorOverview || ''}`);
-    lines.push(`Flag logic: ${domain.flagLogic || ''}`);
-    lines.push(`Flags: ${domain.flags.join(', ') || 'None'}`);
-    domain.reasons.forEach(reason => lines.push(`- ${reason}`));
-  });
-
-  return lines.join('\\n');
-}
-const STORAGE_KEY = 'd1d9-life-pattern-inputs-v1';
-
-function saveInputsToLocal() {
-  const payload = {
-    nativeName: document.getElementById('nativeName')?.value || '',
-    d1Lagna: document.getElementById('d1Lagna')?.value || '',
-    d9Lagna: document.getElementById('d9Lagna')?.value || '',
-    d1: {},
-    d9: {}
-  };
-
-  for (let house = 1; house <= 12; house++) {
-    payload.d1[house] = document.getElementById(`d1-house-${house}`)?.value || '';
-    payload.d9[house] = document.getElementById(`d9-house-${house}`)?.value || '';
-  }
-
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+function switchTab(tabId) {
+  tabs.forEach((tab) => tab.classList.toggle("active", tab.dataset.tab === tabId));
+  panels.forEach((panel) => panel.classList.toggle("active", panel.id === tabId));
 }
 
-function restoreInputsFromLocal() {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) return;
+tabs.forEach((tab) => {
+  tab.addEventListener("click", () => switchTab(tab.dataset.tab));
+});
 
-  const saved = JSON.parse(raw);
-
-  const nativeName = document.getElementById('nativeName');
-  const d1Lagna = document.getElementById('d1Lagna');
-  const d9Lagna = document.getElementById('d9Lagna');
-
-  if (nativeName) nativeName.value = saved.nativeName || '';
-  if (d1Lagna) d1Lagna.value = saved.d1Lagna || 'Aries';
-  if (d9Lagna) d9Lagna.value = saved.d9Lagna || 'Aries';
-
-  for (let house = 1; house <= 12; house++) {
-    const d1 = document.getElementById(`d1-house-${house}`);
-    const d9 = document.getElementById(`d9-house-${house}`);
-    if (d1) d1.value = saved.d1?.[house] || '';
-    if (d9) d9.value = saved.d9?.[house] || '';
-  }
+if (analyzeBtn) {
+  analyzeBtn.addEventListener("click", analyze);
 }
 
-function bindAutoSave() {
-  document.querySelectorAll('input, textarea, select').forEach(el => {
-    el.addEventListener('input', saveInputsToLocal);
-    el.addEventListener('change', saveInputsToLocal);
+if (resetBtn) {
+  resetBtn.addEventListener("click", () => {
+    localStorage.removeItem(STORAGE_KEY);
+    window.location.reload();
   });
 }
-initSelect('d1Lagna');
-initSelect('d9Lagna');
-createGrid('d1Grid', 'd1');
-createGrid('d9Grid', 'd9');
+
+if (downloadBtn) {
+  downloadBtn.addEventListener("click", () => {
+    if (!window.__lastReport) return;
+
+    const html = buildWordReport(window.__lastReport);
+    const blob = new Blob(["\ufeff", html], { type: "application/msword" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "d1-d9-analysis-report.doc";
+    a.click();
+
+    URL.revokeObjectURL(url);
+  });
+}
+
+initSelect("d1Lagna");
+initSelect("d9Lagna");
+createGrid("d1Grid", "d1");
+createGrid("d9Grid", "d9");
 initReferenceGuide();
 restoreInputsFromLocal();
 bindAutoSave();
