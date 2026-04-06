@@ -541,3 +541,12 @@ createGrid("d9Grid", "d9");
 initReferenceGuide();
 restoreInputsFromLocal();
 bindAutoSave();
+
+const saveBtn = document.getElementById('saveBtn');
+if (saveBtn) {
+  saveBtn.addEventListener('click', () => {
+    saveInputsToLocal();
+    saveBtn.textContent = "Saved ✓";
+    setTimeout(() => saveBtn.textContent = "Save", 1500);
+  });
+}
