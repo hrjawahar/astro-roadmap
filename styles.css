@@ -471,16 +471,6 @@ main,
   gap: 12px;
 }
 
-.house-box {
-  min-width: 0;
-}
-
-textarea,
-input,
-select {
-  max-width: 100%;
-}
-
 @media (max-width: 1024px) {
   .grid.two-col,
   .domain-cards,
@@ -488,7 +478,7 @@ select {
   .house-grid {
     grid-template-columns: 1fr;
   }
-
+}
   .section-head {
     flex-direction: column;
     align-items: stretch;
