@@ -106,7 +106,49 @@ function createGrid(containerId, prefix) {
     container.appendChild(box);
   }
 }
+const STORAGE_KEY = 'd1d9-life-pattern-inputs-v1';
 
+function saveInputsToLocal() {
+  const payload = {
+    nativeName: document.getElementById('nativeName')?.value || '',
+    d1Lagna: document.getElementById('d1Lagna')?.value || '',
+    d9Lagna: document.getElementById('d9Lagna')?.value || '',
+    d1: {},
+    d9: {}
+  };
+
+  for (let house = 1; house <= 12; house++) {
+    payload.d1[house] = document.getElementById(`d1-house-${house}`)?.value || '';
+    payload.d9[house] = document.getElementById(`d9-house-${house}`)?.value || '';
+  }
+
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+}
+
+function restoreInputsFromLocal() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) return;
+
+  const saved = JSON.parse(raw);
+
+  document.getElementById('nativeName').value = saved.nativeName || '';
+  document.getElementById('d1Lagna').value = saved.d1Lagna || 'Aries';
+  document.getElementById('d9Lagna').value = saved.d9Lagna || 'Aries';
+
+  for (let house = 1; house <= 12; house++) {
+    const d1 = document.getElementById(`d1-house-${house}`);
+    const d9 = document.getElementById(`d9-house-${house}`);
+    if (d1) d1.value = saved.d1?.[house] || '';
+    if (d9) d9.value = saved.d9?.[house] || '';
+  }
+}
+
+function bindAutoSave() {
+  document.querySelectorAll('input, textarea, select').forEach(el => {
+    el.addEventListener('input', saveInputsToLocal);
+    el.addEventListener('change', saveInputsToLocal);
+  });
+}
 function initReferenceGuide() {
   const wrap = document.getElementById('referenceGuide');
   const template = document.getElementById('accordionTemplate');
@@ -441,7 +483,53 @@ function buildDownloadText(data) {
 
   return lines.join('\\n');
 }
+const STORAGE_KEY = 'd1d9-life-pattern-inputs-v1';
 
+function saveInputsToLocal() {
+  const payload = {
+    nativeName: document.getElementById('nativeName')?.value || '',
+    d1Lagna: document.getElementById('d1Lagna')?.value || '',
+    d9Lagna: document.getElementById('d9Lagna')?.value || '',
+    d1: {},
+    d9: {}
+  };
+
+  for (let house = 1; house <= 12; house++) {
+    payload.d1[house] = document.getElementById(`d1-house-${house}`)?.value || '';
+    payload.d9[house] = document.getElementById(`d9-house-${house}`)?.value || '';
+  }
+
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+}
+
+function restoreInputsFromLocal() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) return;
+
+  const saved = JSON.parse(raw);
+
+  const nativeName = document.getElementById('nativeName');
+  const d1Lagna = document.getElementById('d1Lagna');
+  const d9Lagna = document.getElementById('d9Lagna');
+
+  if (nativeName) nativeName.value = saved.nativeName || '';
+  if (d1Lagna) d1Lagna.value = saved.d1Lagna || 'Aries';
+  if (d9Lagna) d9Lagna.value = saved.d9Lagna || 'Aries';
+
+  for (let house = 1; house <= 12; house++) {
+    const d1 = document.getElementById(`d1-house-${house}`);
+    const d9 = document.getElementById(`d9-house-${house}`);
+    if (d1) d1.value = saved.d1?.[house] || '';
+    if (d9) d9.value = saved.d9?.[house] || '';
+  }
+}
+
+function bindAutoSave() {
+  document.querySelectorAll('input, textarea, select').forEach(el => {
+    el.addEventListener('input', saveInputsToLocal);
+    el.addEventListener('change', saveInputsToLocal);
+  });
+}
 initSelect('d1Lagna');
 initSelect('d9Lagna');
 createGrid('d1Grid', 'd1');
