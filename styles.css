@@ -1,3 +1,42 @@
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+.app-shell {
+  width: 100%;
+  max-width: 100%;
+  padding: 14px;
+}
+
+main {
+  width: 100%;
+}
+
+.grid.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.house-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 1024px) {
+  .grid.two-col,
+  .insights-layout {
+    grid-template-columns: 1fr;
+  }
+}
 :root {
   --bg: #113d6d;
   --bg-soft: #eaf0f7;
