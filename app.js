@@ -164,7 +164,6 @@ function renderValidation(errors) {
   validationBox.innerHTML = `<div class="bad"><strong>Validation failed:</strong></div><ul>${errors.map(err => `<li>${err}</li>`).join('')}</ul>`;
 }
 function renderValidation(errors) {
-  ...
 }
 
 html, body {
