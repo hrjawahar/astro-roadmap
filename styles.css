@@ -418,6 +418,50 @@ select {
 }
 
 @media (max-width: 1024px) {
+ html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+.app-shell {
+  max-width: 100%;
+  width: 100%;
+  margin: 0 auto;
+  padding: 14px;
+}
+
+main,
+.tab-panel,
+.card {
+  width: 100%;
+  max-width: 100%;
+}
+
+.grid.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.house-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.house-box {
+  min-width: 0;
+}
+
+textarea,
+input,
+select {
+  max-width: 100%;
+}
+
+@media (max-width: 1024px) {
   .grid.two-col,
   .domain-cards,
   .verdict-grid,
