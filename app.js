@@ -1,7 +1,7 @@
 
 const SIGNS = ["Aries","Taurus","Gemini","Cancer","Leo","Virgo","Libra","Scorpio","Sagittarius","Capricorn","Aquarius","Pisces"];
 const PLANETS = ["Sun","Moon","Mars","Mercury","Jupiter","Venus","Saturn","Rahu","Ketu"];
-
+const STORAGE_KEY = 'd1d9-life-pattern-inputs-v1';
 const REFERENCE_SECTIONS = [
   {
     title: "Core principles",
@@ -162,7 +162,52 @@ function renderValidation(errors) {
   }
   validationBox.innerHTML = `<div class="bad"><strong>Validation failed:</strong></div><ul>${errors.map(err => `<li>${err}</li>`).join('')}</ul>`;
 }
+function renderValidation(errors) {
+  ...
+}
 
+/* >>> ADD HERE <<< */
+const STORAGE_KEY = 'd1d9-life-pattern-inputs-v1';
+
+function saveInputsToLocal() {
+  const payload = {
+    nativeName: document.getElementById('nativeName')?.value || '',
+    d1Lagna: document.getElementById('d1Lagna')?.value || '',
+    d9Lagna: document.getElementById('d9Lagna')?.value || '',
+    d1: {},
+    d9: {}
+  };
+
+  for (let house = 1; house <= 12; house += 1) {
+    payload.d1[house] = document.getElementById(`d1-house-${house}`)?.value || '';
+    payload.d9[house] = document.getElementById(`d9-house-${house}`)?.value || '';
+  }
+
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+}
+
+function restoreInputsFromLocal() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) return;
+
+  const saved = JSON.parse(raw);
+
+  document.getElementById('nativeName').value = saved.nativeName || '';
+  document.getElementById('d1Lagna').value = saved.d1Lagna || 'Aries';
+  document.getElementById('d9Lagna').value = saved.d9Lagna || 'Aries';
+
+  for (let house = 1; house <= 12; house += 1) {
+    document.getElementById(`d1-house-${house}`).value = saved.d1?.[house] || '';
+    document.getElementById(`d9-house-${house}`).value = saved.d9?.[house] || '';
+  }
+}
+
+function bindAutoSave() {
+  document.querySelectorAll('input, textarea, select').forEach(el => {
+    el.addEventListener('input', saveInputsToLocal);
+    el.addEventListener('change', saveInputsToLocal);
+  });
+}
 function buildPayload() {
   const d1Lagna = document.getElementById('d1Lagna').value;
   const d9Lagna = document.getElementById('d9Lagna').value;
@@ -322,17 +367,23 @@ function switchTab(tabId) {
 
 tabs.forEach(tab => tab.addEventListener('click', () => switchTab(tab.dataset.tab)));
 analyzeBtn.addEventListener('click', analyze);
-resetBtn.addEventListener('click', () => window.location.reload());
+resetBtn.addEventListener('click', () => {
+  localStorage.removeItem(STORAGE_KEY);
+  window.location.reload();
+});
 
 downloadBtn.addEventListener('click', () => {
   if (!window.__lastReport) return;
-  const report = buildDownloadText(window.__lastReport);
-  const blob = new Blob([report], { type: 'text/plain;charset=utf-8' });
+
+  const html = buildWordReport(window.__lastReport);
+  const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
   const url = URL.createObjectURL(blob);
+
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'd1-d9-analysis-report.txt';
+  a.download = 'd1-d9-analysis-report.doc';
   a.click();
+
   URL.revokeObjectURL(url);
 });
 
@@ -369,3 +420,5 @@ initSelect('d9Lagna');
 createGrid('d1Grid', 'd1');
 createGrid('d9Grid', 'd9');
 initReferenceGuide();
+restoreInputsFromLocal();
+bindAutoSave();
