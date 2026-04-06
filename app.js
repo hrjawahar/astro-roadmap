@@ -2,6 +2,7 @@
 const SIGNS = ["Aries","Taurus","Gemini","Cancer","Leo","Virgo","Libra","Scorpio","Sagittarius","Capricorn","Aquarius","Pisces"];
 const PLANETS = ["Sun","Moon","Mars","Mercury","Jupiter","Venus","Saturn","Rahu","Ketu"];
 const STORAGE_KEY = 'd1d9-life-pattern-inputs-v1';
+
 const REFERENCE_SECTIONS = [
   {
     title: "Core principles",
@@ -166,47 +167,70 @@ function renderValidation(errors) {
   ...
 }
 
-/* >>> ADD HERE <<< */
-const STORAGE_KEY = 'd1d9-life-pattern-inputs-v1';
-
-function saveInputsToLocal() {
-  const payload = {
-    nativeName: document.getElementById('nativeName')?.value || '',
-    d1Lagna: document.getElementById('d1Lagna')?.value || '',
-    d9Lagna: document.getElementById('d9Lagna')?.value || '',
-    d1: {},
-    d9: {}
-  };
-
-  for (let house = 1; house <= 12; house += 1) {
-    payload.d1[house] = document.getElementById(`d1-house-${house}`)?.value || '';
-    payload.d9[house] = document.getElementById(`d9-house-${house}`)?.value || '';
-  }
-
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  overflow-x: hidden;
 }
 
-function restoreInputsFromLocal() {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) return;
-
-  const saved = JSON.parse(raw);
-
-  document.getElementById('nativeName').value = saved.nativeName || '';
-  document.getElementById('d1Lagna').value = saved.d1Lagna || 'Aries';
-  document.getElementById('d9Lagna').value = saved.d9Lagna || 'Aries';
-
-  for (let house = 1; house <= 12; house += 1) {
-    document.getElementById(`d1-house-${house}`).value = saved.d1?.[house] || '';
-    document.getElementById(`d9-house-${house}`).value = saved.d9?.[house] || '';
-  }
+.app-shell {
+  max-width: 100%;
+  width: 100%;
+  margin: 0 auto;
+  padding: 14px;
 }
 
-function bindAutoSave() {
-  document.querySelectorAll('input, textarea, select').forEach(el => {
-    el.addEventListener('input', saveInputsToLocal);
-    el.addEventListener('change', saveInputsToLocal);
-  });
+main,
+.tab-panel,
+.card {
+  width: 100%;
+  max-width: 100%;
+}
+
+.grid.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.house-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.house-box {
+  min-width: 0;
+}
+
+textarea,
+input,
+select {
+  max-width: 100%;
+}
+
+@media (max-width: 1024px) {
+  .grid.two-col,
+  .domain-cards,
+  .verdict-grid,
+  .house-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .section-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .topbar {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .app-shell {
+    padding: 10px;
+  }
 }
 function buildPayload() {
   const d1Lagna = document.getElementById('d1Lagna').value;
