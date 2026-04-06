@@ -1,0 +1,40 @@
+
+body {
+font-family: Arial, sans-serif;
+background:#0d3b66;
+margin:0;
+padding:0;
+color:#111;
+}
+
+.app-shell {
+padding:20px;
+}
+
+.topbar {
+background:#0d3b66;
+color:white;
+padding:20px;
+font-size:22px;
+font-weight:bold;
+}
+
+.card {
+background:white;
+margin:15px 0;
+padding:15px;
+border-radius:6px;
+}
+
+h2 {
+background:#0d3b66;
+color:white;
+padding:8px;
+font-size:16px;
+}
+
+.verdict-card {
+border:1px solid #ccc;
+padding:10px;
+margin:5px;
+}
