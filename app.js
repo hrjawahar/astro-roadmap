@@ -313,8 +313,7 @@ function loadHistoryEntry(id) {
 function deleteHistoryEntry(id) {
   const history = getSavedHistory().filter(entry => entry.id !== id);
   localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
-  renderHistory();
-}
+console.log("SAVED", history);}
 
 function renderHistory() {
   const historyBox = document.getElementById("historyBox");
