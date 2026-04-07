@@ -1,5 +1,6 @@
 const SIGNS = ["Aries","Taurus","Gemini","Cancer","Leo","Virgo","Libra","Scorpio","Sagittarius","Capricorn","Aquarius","Pisces"];
 const PLANETS = ["Sun","Moon","Mars","Mercury","Jupiter","Venus","Saturn","Rahu","Ketu"];
+
 const STORAGE_KEY = "d1d9-life-pattern-inputs-v1";
 const HISTORY_KEY = "d1d9-life-pattern-history-v1";
 
@@ -75,6 +76,7 @@ const comparisonTableWrap = document.getElementById("comparisonTableWrap");
 const analyzeBtn = document.getElementById("analyzeBtn");
 const downloadBtn = document.getElementById("downloadReportBtn");
 const resetBtn = document.getElementById("resetBtn");
+const saveBtn = document.getElementById("saveBtn");
 
 function initSelect(id) {
   const select = document.getElementById(id);
@@ -117,10 +119,12 @@ function initReferenceGuide() {
     const node = template.content.cloneNode(true);
     const summary = node.querySelector("summary");
     const content = node.querySelector(".accordion-content");
+
     if (summary) summary.textContent = section.title;
     if (content) {
       content.innerHTML = `<ul>${section.lines.map((line) => `<li>${line}</li>`).join("")}</ul>`;
     }
+
     wrap.appendChild(node);
   });
 }
@@ -146,7 +150,7 @@ function getHouseInput(prefix) {
 
 function validateChart(chartName, lagna, houses) {
   const errors = [];
-  const planetCounts = Object.fromEntries(PLANETS.map((p) => [p, 0]));
+  const planetCounts = Object.fromEntries(PLANETS.map((planet) => [planet, 0]));
 
   Object.entries(houses).forEach(([house, planets]) => {
     planets.forEach((planet) => {
@@ -191,13 +195,11 @@ function renderValidation(errors) {
 function buildPayload() {
   const d1Lagna = document.getElementById("d1Lagna")?.value || "";
   const d9Lagna = document.getElementById("d9Lagna")?.value || "";
-  const d1Houses = getHouseInput("d1");
-  const d9Houses = getHouseInput("d9");
 
   return {
-    d1: { lagnaSign: d1Lagna, houses: d1Houses },
-    d9: { lagnaSign: d9Lagna, houses: d9Houses },
-    meta: { source: "manual-entry-browser-app", version: "clean-rewrite-v1" }
+    d1: { lagnaSign: d1Lagna, houses: getHouseInput("d1") },
+    d9: { lagnaSign: d9Lagna, houses: getHouseInput("d9") },
+    meta: { source: "manual-entry-browser-app", version: "history-fixed-v1" }
   };
 }
 
@@ -209,7 +211,7 @@ function normalizeVerdict(text) {
     .replace(/\bMixed\b/gi, "Developing");
 }
 
-function saveInputsToLocal() {
+function collectCurrentFormState() {
   const payload = {
     nativeName: document.getElementById("nativeName")?.value || "",
     d1Lagna: document.getElementById("d1Lagna")?.value || "",
@@ -223,6 +225,11 @@ function saveInputsToLocal() {
     payload.d9[house] = document.getElementById(`d9-house-${house}`)?.value || "";
   }
 
+  return payload;
+}
+
+function saveInputsToLocal() {
+  const payload = collectCurrentFormState();
   localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
 }
 
@@ -251,6 +258,7 @@ function restoreInputsFromLocal() {
     console.error("Failed to restore saved inputs", error);
   }
 }
+
 function getSavedHistory() {
   const raw = localStorage.getItem(HISTORY_KEY);
   if (!raw) return [];
@@ -258,38 +266,36 @@ function getSavedHistory() {
   try {
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed : [];
-  } catch {
+  } catch (error) {
+    console.error("Failed to parse history", error);
     return [];
   }
 }
 
 function saveCurrentEntryToHistory() {
-  const nativeName = document.getElementById("nativeName")?.value || "Unnamed";
+  const formState = collectCurrentFormState();
 
   const entry = {
     id: Date.now().toString(),
-    name: nativeName,
+    name: formState.nativeName.trim() || "Unnamed Native",
     savedAt: new Date().toISOString(),
-    d1Lagna: document.getElementById("d1Lagna")?.value || "",
-    d9Lagna: document.getElementById("d9Lagna")?.value || "",
-    d1: {},
-    d9: {}
+    d1Lagna: formState.d1Lagna,
+    d9Lagna: formState.d9Lagna,
+    d1: formState.d1,
+    d9: formState.d9
   };
 
-  for (let i = 1; i <= 12; i++) {
-    entry.d1[i] = document.getElementById(`d1-${i}`)?.value || "";
-    entry.d9[i] = document.getElementById(`d9-${i}`)?.value || "";
-  }
-
-  const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
+  const history = getSavedHistory();
   history.unshift(entry);
 
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  const trimmedHistory = history.slice(0, 25);
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(trimmedHistory));
   renderHistory();
 }
+
 function loadHistoryEntry(id) {
   const history = getSavedHistory();
-  const item = history.find(entry => entry.id === id);
+  const item = history.find((entry) => entry.id === id);
   if (!item) return;
 
   const nativeName = document.getElementById("nativeName");
@@ -303,6 +309,7 @@ function loadHistoryEntry(id) {
   for (let house = 1; house <= 12; house += 1) {
     const d1 = document.getElementById(`d1-house-${house}`);
     const d9 = document.getElementById(`d9-house-${house}`);
+
     if (d1) d1.value = item.d1?.[house] || "";
     if (d9) d9.value = item.d9?.[house] || "";
   }
@@ -311,9 +318,10 @@ function loadHistoryEntry(id) {
 }
 
 function deleteHistoryEntry(id) {
-  const history = getSavedHistory().filter(entry => entry.id !== id);
+  const history = getSavedHistory().filter((entry) => entry.id !== id);
   localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
-console.log("SAVED", history);}
+  renderHistory();
+}
 
 function renderHistory() {
   const historyBox = document.getElementById("historyBox");
@@ -326,7 +334,7 @@ function renderHistory() {
     return;
   }
 
-  historyBox.innerHTML = history.map(item => `
+  historyBox.innerHTML = history.map((item) => `
     <div class="history-item">
       <div class="history-main">
         <div class="history-name">${item.name}</div>
@@ -334,20 +342,21 @@ function renderHistory() {
         <div class="history-meta">D1: ${item.d1Lagna} | D9: ${item.d9Lagna}</div>
       </div>
       <div class="history-actions">
-        <button class="secondary history-load-btn" data-load-id="${item.id}">Load</button>
-        <button class="danger history-delete-btn" data-delete-id="${item.id}">Delete</button>
+        <button class="secondary history-load-btn" data-load-id="${item.id}" type="button">Load</button>
+        <button class="danger history-delete-btn" data-delete-id="${item.id}" type="button">Delete</button>
       </div>
     </div>
   `).join("");
 
-  historyBox.querySelectorAll("[data-load-id]").forEach(btn => {
+  historyBox.querySelectorAll("[data-load-id]").forEach((btn) => {
     btn.addEventListener("click", () => loadHistoryEntry(btn.dataset.loadId));
   });
 
-  historyBox.querySelectorAll("[data-delete-id]").forEach(btn => {
+  historyBox.querySelectorAll("[data-delete-id]").forEach((btn) => {
     btn.addEventListener("click", () => deleteHistoryEntry(btn.dataset.deleteId));
   });
 }
+
 function bindAutoSave() {
   document.querySelectorAll("input, textarea, select").forEach((el) => {
     el.addEventListener("input", saveInputsToLocal);
@@ -518,7 +527,7 @@ function renderDomainCards(domains) {
       <div class="score-row"><strong>Flag logic:</strong> ${domain.flagLogic || "-"}</div>
       <div class="score-row"><strong>Flags:</strong> ${(domain.flags && domain.flags.length) ? domain.flags.join(", ") : "None"}</div>
       <div class="score-row"><strong>Reading:</strong></div>
-      <ul class="status-list">${(domain.reasons || []).map((r) => `<li>${r}</li>`).join("")}</ul>
+      <ul class="status-list">${(domain.reasons || []).map((reason) => `<li>${reason}</li>`).join("")}</ul>
     </article>
   `).join("");
 }
@@ -586,7 +595,7 @@ function buildWordReport(data) {
         <p><strong>Flag logic:</strong> ${domain.flagLogic || "-"}</p>
         <p><strong>Flags:</strong> ${(domain.flags && domain.flags.length) ? domain.flags.join(", ") : "None"}</p>
         <ul>
-          ${(domain.reasons || []).map((r) => `<li>${r}</li>`).join("")}
+          ${(domain.reasons || []).map((reason) => `<li>${reason}</li>`).join("")}
         </ul>
       `).join("")}
     </div>
@@ -610,6 +619,7 @@ if (analyzeBtn) {
 if (resetBtn) {
   resetBtn.addEventListener("click", () => {
     localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(HISTORY_KEY);
     window.location.reload();
   });
 }
@@ -631,6 +641,17 @@ if (downloadBtn) {
   });
 }
 
+if (saveBtn) {
+  saveBtn.addEventListener("click", () => {
+    saveInputsToLocal();
+    saveCurrentEntryToHistory();
+    saveBtn.textContent = "Saved ✓";
+    setTimeout(() => {
+      saveBtn.textContent = "Save";
+    }, 1200);
+  });
+}
+
 initSelect("d1Lagna");
 initSelect("d9Lagna");
 createGrid("d1Grid", "d1");
@@ -639,12 +660,3 @@ initReferenceGuide();
 restoreInputsFromLocal();
 bindAutoSave();
 renderHistory();
-
-const saveBtn = document.getElementById("saveBtn");
-if (saveBtn) {
-  saveBtn.addEventListener("click", () => {
-    console.log("SAVE CLICKED");   // <-- add this
-    saveInputsToLocal();
-    saveCurrentEntryToHistory();
-  });
-}
