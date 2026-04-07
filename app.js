@@ -644,11 +644,8 @@ renderHistory();
 const saveBtn = document.getElementById("saveBtn");
 if (saveBtn) {
   saveBtn.addEventListener("click", () => {
+    console.log("SAVE CLICKED");   // <-- add this
     saveInputsToLocal();
     saveCurrentEntryToHistory();
-    saveBtn.textContent = "Saved ✓";
-    setTimeout(() => {
-      saveBtn.textContent = "Save";
-    }, 1500);
   });
 }
