@@ -264,33 +264,29 @@ function getSavedHistory() {
 }
 
 function saveCurrentEntryToHistory() {
-  const nativeName = document.getElementById("nativeName")?.value?.trim() || "Unnamed Native";
-  const d1Lagna = document.getElementById("d1Lagna")?.value || "";
-  const d9Lagna = document.getElementById("d9Lagna")?.value || "";
+  const nativeName = document.getElementById("nativeName")?.value || "Unnamed";
 
   const entry = {
     id: Date.now().toString(),
     name: nativeName,
     savedAt: new Date().toISOString(),
-    d1Lagna,
-    d9Lagna,
+    d1Lagna: document.getElementById("d1Lagna")?.value || "",
+    d9Lagna: document.getElementById("d9Lagna")?.value || "",
     d1: {},
     d9: {}
   };
 
-  for (let house = 1; house <= 12; house += 1) {
-    entry.d1[house] = document.getElementById(`d1-house-${house}`)?.value || "";
-    entry.d9[house] = document.getElementById(`d9-house-${house}`)?.value || "";
+  for (let i = 1; i <= 12; i++) {
+    entry.d1[i] = document.getElementById(`d1-${i}`)?.value || "";
+    entry.d9[i] = document.getElementById(`d9-${i}`)?.value || "";
   }
 
-  const history = getSavedHistory();
+  const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
   history.unshift(entry);
 
-  const trimmed = history.slice(0, 25); // keep latest 25 saves
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(trimmed));
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
   renderHistory();
 }
-
 function loadHistoryEntry(id) {
   const history = getSavedHistory();
   const item = history.find(entry => entry.id === id);
