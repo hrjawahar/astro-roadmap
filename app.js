@@ -619,7 +619,6 @@ if (analyzeBtn) {
 if (resetBtn) {
   resetBtn.addEventListener("click", () => {
     localStorage.removeItem(STORAGE_KEY);
-    localStorage.removeItem(HISTORY_KEY);
     window.location.reload();
   });
 }
